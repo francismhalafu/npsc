@@ -3,14 +3,18 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     /**
      * The attributes that are mass assignable.
@@ -44,5 +48,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Determine if the user can access the Filament admin panel
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // All users with any role can access the admin panel
+        // Specific permissions will be handled by policies and resources
+        return $this->hasAnyRole(['super_admin', 'approver', 'creator']);
+    }
+
+    /**
+     * Relationships
+     */
+    public function createdPosts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'created_by');
+    }
+
+    public function approvedPosts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'approved_by');
     }
 }
